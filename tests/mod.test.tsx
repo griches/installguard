@@ -150,7 +150,7 @@ test('a lookalike is held with the reasons in the question, and Cancel refuses i
   expect(seen.asked).toEqual([
     {
       question:
-        'Install Guard, possible typosquat: expresss (npm): possible typosquat, looks like express (169M downloads a week), which is a different package; new package, first published 3 days ago; fresh release, version 1.0.1 is 9 hours old; little used, 41 downloads a week. Run `npm install expresss`?',
+        'Install Guard: expresss (npm): possible typosquat, looks like express (169M downloads a week), which is a different package; new package, first published 3 days ago; fresh release, version 1.0.1 is 9 hours old; little used, 41 downloads a week. Run `npm install expresss`?',
       header: 'Typosquat?',
       options: ['Cancel', 'Run it once', 'Run it and always allow'],
     },
@@ -248,7 +248,7 @@ test('the pane draws the whole report while the question is up', async ($, on) =
   expect(drawn).toEqual([
     'Held before it runs: possible typosquat',
     'reqeusts 0.0.1 · 9 days old · 12 a week',
-    '    Possible typosquat: ',
+    '    Possible typosquat',
     'looks like requests (306M downloads a week), which is a different package',
     '    You asked for  reqeusts · 12 a week',
     '    You may mean   requests · 306M a week',

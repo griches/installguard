@@ -77,9 +77,9 @@ A flagged command is held and Claude Code's own question dialog asks, naming the
 ```
 Typosquat?
 
-Install Guard, possible typosquat: expresss (npm): possible typosquat, looks like
-express (141M downloads a week), which is a different package; little used,
-693 downloads a week. Run `npm install expresss`?
+Install Guard: expresss (npm): possible typosquat, looks like express (141M
+downloads a week), which is a different package; little used, 693 downloads
+a week. Run `npm install expresss`?
 
   1. Cancel
   2. Run it once
@@ -93,8 +93,10 @@ Held before it runs: possible typosquat
 $ npm install expresss
 
 ! expresss 0.0.0 · 10 years old · 693 a week
-    Possible typosquat: looks like express (141M downloads a week), which is a different package
-    Little used: 693 downloads a week
+    Possible typosquat
+      looks like express (141M downloads a week), which is a different package
+    Little used
+      693 downloads a week
 
     You asked for  expresss · 693 a week
     You may mean   express · 141M a week

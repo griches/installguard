@@ -240,9 +240,16 @@ const report = ($: EngineInterface, e: Parameters<EngineInterface['ui']['resolve
             <Text dimColor>{`  ${registryName(one.ecosystem)} · ${one.via}`}</Text>
           </Box>
           {one.flags.map(flag => (
-            <Box flexDirection="row">
-              <Text bold color={flag.level === 'risk' ? 'warning' : undefined} dimColor={flag.level === 'note'}>{`    ${flag.label}: `}</Text>
-              <Text color={flag.level === 'risk' ? 'warning' : undefined} dimColor={flag.level === 'note'}>{flag.text}</Text>
+            <Box flexDirection="column">
+              <Text bold color={flag.level === 'risk' ? 'warning' : undefined} dimColor={flag.level === 'note'}>{`    ${flag.label}`}</Text>
+              <Box flexDirection="row">
+                <Box width={6} flexShrink={0}>
+                  <Text> </Text>
+                </Box>
+                <Box flexGrow={1} flexShrink={1}>
+                  <Text color={flag.level === 'risk' ? 'warning' : undefined} dimColor={flag.level === 'note'}>{flag.text}</Text>
+                </Box>
+              </Box>
             </Box>
           ))}
           {one.lookalike !== null && (
@@ -394,7 +401,7 @@ export const register: Register = (on, options) => {
 
     try {
       const first = concern(packages, found.oddities)
-      const answered = await $.ui.ask(question(e.command, flagged, fresh.length, flagged.length === 0 ? 'Install Guard' : `Install Guard, ${first.label.toLowerCase()}`), {
+      const answered = await $.ui.ask(question(e.command, flagged, fresh.length, 'Install Guard'), {
         header: flagged.length === 0 ? 'Install' : first.chip,
         options: canAlways ? [ANSWER.cancel, ANSWER.install, ANSWER.always] : [ANSWER.cancel, ANSWER.install],
       })
