@@ -1,0 +1,15 @@
+{
+  "name": "installguard",
+  "description": "installguard: looks up every new package before Claude installs it.",
+  "owner": {
+    "name": "Gary Riches",
+    "url": "https://github.com/griches"
+  },
+  "plugins": [
+    {
+      "name": "installguard",
+      "source": "./",
+      "description": "Looks up every new package before it installs: holds made-up names, typosquats, days-old releases and curl-into-shell for your answer, and lets the rest through."
+    }
+  ]
+}

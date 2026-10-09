@@ -1,0 +1,42 @@
+{
+  "name": "installguard",
+  "version": "0.1.0",
+  "description": "Looks up every new package before it installs: holds made-up names, typosquats, days-old releases and curl-into-shell for your answer, and lets the rest through.",
+  "author": {
+    "name": "Gary Riches",
+    "url": "https://github.com/griches"
+  },
+  "homepage": "https://github.com/griches/installguard",
+  "repository": "https://github.com/griches/installguard",
+  "keywords": ["security", "supply-chain", "npm", "pypi", "cargo", "typosquatting", "slopsquatting", "guard", "mod"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "hold": {
+      "type": "string",
+      "title": "What is held",
+      "description": "flagged: only a command that names a flagged package or fetches from outside a registry. always: every command that adds a package the project does not already have.",
+      "options": ["flagged", "always"],
+      "default": "flagged"
+    },
+    "sensitivity": {
+      "type": "string",
+      "title": "Sensitivity",
+      "description": "What counts as new, fresh and little used. relaxed: 7 days, 1 day, 100 downloads a week. balanced: 30 days, 3 days, 1,000. strict: 90 days, 7 days, 10,000.",
+      "options": ["relaxed", "balanced", "strict"],
+      "default": "balanced"
+    },
+    "unreachable": {
+      "type": "string",
+      "title": "When a registry cannot be reached",
+      "description": "allow: the command runs and the pane notes it was not checked. hold: the command waits for your answer.",
+      "options": ["allow", "hold"],
+      "default": "allow"
+    },
+    "toasts": {
+      "type": "boolean",
+      "title": "Say when a package passes",
+      "description": "Show a short toast with a package's age and weekly downloads when nothing about it is flagged.",
+      "default": true
+    }
+  }
+}
