@@ -328,3 +328,13 @@ test('the allowed list is read back when a session starts', async ($, on) => {
   expect(seen.ran).toEqual(['npm install expresss'])
   expect(seen.asked).toEqual([])
 })
+
+test('a pinned release an hour or so old of a much-used package is held', async ($, on) => {
+  const seen = world(on, { answers: ['Cancel'] })
+
+  const ran = await bash($, 'npm install chalk@5.6.1')
+
+  expect(seen.fetched).toContain('https://registry.npmjs.org/chalk')
+  expect(ran.deny).toContain('chalk@5.6.1 (npm): fresh release, version 5.6.1 is 9 hours old')
+  expect(seen.ran).toEqual([])
+})

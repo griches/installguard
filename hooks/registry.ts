@@ -81,7 +81,9 @@ const npm = async (get: Get, request: Request): Promise<Facts> => {
   let createdAt: number | null = null
   let publishedAt: number | null = null
 
-  if (weeklyDownloads === null || weeklyDownloads < SMALL_PACKAGE) {
+  // A pinned version's date is only in the package's whole record, however large that is:
+  // a release an hour old must not pass for want of asking.
+  if (weeklyDownloads === null || weeklyDownloads < SMALL_PACKAGE || request.version !== null) {
     const times = record(json((await get(`https://registry.npmjs.org/${name}`))?.text)?.time)
     createdAt = time(times.created)
     publishedAt = version === null ? null : time(times[version])

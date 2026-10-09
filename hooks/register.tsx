@@ -62,6 +62,7 @@ const CHIP: Record<Flag['kind'], string> = {
   typosquat: 'Typosquat?',
   new: 'New package',
   fresh: 'New release',
+  undated: 'Undated',
   unpopular: 'Little used',
   unchecked: 'Unchecked',
   deprecated: 'Deprecated',

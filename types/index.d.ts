@@ -38,7 +38,7 @@ export type Facts = {
 }
 
 export type Flag = {
-  kind: 'missing' | 'typosquat' | 'new' | 'fresh' | 'unpopular' | 'unchecked' | 'script' | 'deprecated' | 'source-only'
+  kind: 'missing' | 'typosquat' | 'new' | 'fresh' | 'undated' | 'unpopular' | 'unchecked' | 'script' | 'deprecated' | 'source-only'
   /** `risk` holds the command for an answer; `note` is only shown. */
   level: 'risk' | 'note'
   /** The kind of concern in two or three words, shown before the detail: `Possible typosquat`. */

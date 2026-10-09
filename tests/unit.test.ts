@@ -178,6 +178,23 @@ describe('what is flagged', () => {
     expect(flags).toEqual([{ kind: 'fresh', label: 'Fresh release', level: 'risk', text: 'version 5.6.1 is 9 hours old' }])
   })
 
+  test('a pinned version of a much-used package has its own release date checked', async () => {
+    const asked = request('npm', 'chalk', { version: '5.6.1' })
+    const facts = await lookup(get, asked)
+    expect(facts).toMatchObject({ version: '5.6.1', weeklyDownloads: 310_000_000, publishedAt: Date.parse('2026-10-09T03:00:00.000Z') })
+    expect(assess(asked, facts, BALANCED, NOW).map(flag => `${flag.level}:${flag.kind}`)).toEqual(['risk:fresh'])
+  })
+
+  test('a pinned version whose date cannot be read says so, and holds when told to', async () => {
+    const asked = request('npm', 'express', { version: '5.2.1' })
+    const facts = await lookup(get, asked)
+    expect(facts.publishedAt).toBeNull()
+    expect(assess(asked, facts, BALANCED, NOW)).toEqual([
+      { kind: 'undated', label: 'Release date unknown', level: 'note', text: 'the date of version 5.2.1 could not be read, so its age was not checked' },
+    ])
+    expect(assess(asked, facts, { ...BALANCED, holdsUnchecked: true }, NOW)[0]?.level).toBe('risk')
+  })
+
   test('a name no registry has, with the package it may have meant', async () => {
     const asked = request('npm', 'react-codeshift-utils')
     expect(assess(asked, await lookup(get, asked), BALANCED, NOW)).toEqual([

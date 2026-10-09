@@ -125,6 +125,16 @@ export const assess = (request: Request, facts: Facts, thresholds: Thresholds, n
     flags.push({ kind: 'fresh', label: 'Fresh release', level: 'risk', text: `${version} is ${span(Math.max(0, now - facts.publishedAt))} old` })
   }
 
+  // A version asked for by number whose date the registry did not give cannot be called old enough.
+  if (request.version !== null && facts.version === request.version && facts.publishedAt === null && request.ecosystem !== 'rubygems') {
+    flags.push({
+      kind: 'undated',
+      label: 'Release date unknown',
+      level: thresholds.holdsUnchecked ? 'risk' : 'note',
+      text: `the date of version ${request.version} could not be read, so its age was not checked`,
+    })
+  }
+
   if (facts.weeklyDownloads !== null && facts.weeklyDownloads < thresholds.minWeeklyDownloads) {
     flags.push({ kind: 'unpopular', label: 'Little used', level: 'risk', text: `${compact(facts.weeklyDownloads)} downloads a week` })
   }

@@ -28,6 +28,14 @@ export const WEB: Record<string, { status: number; text: string }> = {
     objects: [{ package: { name: 'chalk', version: '5.6.1', date: '2026-10-09T03:00:00.000Z' } }],
   }),
 
+  // chalk pinned to that same nine-hour-old version: only the whole record has its date.
+  'https://registry.npmjs.org/chalk/5.6.1': body({ name: 'chalk', version: '5.6.1' }),
+  'https://registry.npmjs.org/chalk': body({
+    time: { created: '2013-08-03T00:21:56.318Z', '5.6.0': '2026-08-01T10:00:00.000Z', '5.6.1': '2026-10-09T03:00:00.000Z' },
+  }),
+  // express pinned, with its whole record out of reach.
+  'https://registry.npmjs.org/express/5.2.1': body({ name: 'express', version: '5.2.1' }),
+
   // tsc: not the TypeScript compiler, and deprecated by npm.
   'https://registry.npmjs.org/tsc/latest': body({ name: 'tsc', version: '2.0.4', deprecated: 'Package no longer supported.' }),
   'https://api.npmjs.org/downloads/point/last-week/tsc': body({ downloads: 704_770, package: 'tsc' }),

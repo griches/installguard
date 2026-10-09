@@ -51,6 +51,7 @@ Outside a registry, these are always held:
 | Lookalike | One edit, one swap or one dropped separator away from a well-known package, and not widely used itself | |
 | New package | First published recently | 30 days |
 | Fresh version | The version that would install is very new. Most poisoned releases are pulled within days | 3 days |
+| Release date unknown | A version you pinned whose date the registry did not give, so its age could not be checked. Shown, and held when unreachable registries are set to hold | |
 | Little used | Few downloads a week | 1,000 |
 | Deprecated and about to run | `npx` of a package its author has withdrawn, such as `npx tsc` without TypeScript installed | |
 
