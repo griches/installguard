@@ -1,8 +1,8 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Checked, Ecosystem, Entry, Held, Oddity, Request } from '../types'
-import { assess, registryName, summary } from './assess'
+import type { Checked, Ecosystem, Entry, Flag, Held, Oddity, Request } from '../types'
+import { assess, compact, registryName, summary } from './assess'
 import type { Thresholds } from './assess'
 import { findInstalls } from './detect'
 import { lookup } from './registry'
@@ -49,10 +49,43 @@ const titled = (one: Request) => (one.version === null ? one.name : `${one.name}
 const record = ($: EngineInterface, entry: Entry) => update($, log, list => [...list, entry].slice(-KEPT_ENTRIES))
 
 /** What is wrong with a held command, in words Claude can act on. */
+const told = (flag: Flag) => `${flag.label.toLowerCase()}, ${flag.text}`
+
 const reasons = (packages: readonly Checked[], oddities: readonly Oddity[]) => [
-  ...packages.filter(isRisky).map(one => `${titled(one)} (${registryName(one.ecosystem)}): ${one.flags.filter(flag => flag.level === 'risk').map(flag => flag.text).join('; ')}`),
+  ...packages.filter(isRisky).map(one => `${titled(one)} (${registryName(one.ecosystem)}): ${one.flags.filter(flag => flag.level === 'risk').map(told).join('; ')}`),
   ...oddities.map(one => `${one.via} ${ODDITY[one.kind](one.detail)}`),
 ]
+
+/** The dialog's chip: the kind of concern in a word or two, twelve characters at most. */
+const CHIP: Record<Flag['kind'], string> = {
+  missing: 'Unknown pkg',
+  typosquat: 'Typosquat?',
+  new: 'New package',
+  fresh: 'New release',
+  unpopular: 'Little used',
+  unchecked: 'Unchecked',
+  deprecated: 'Deprecated',
+  script: 'Install',
+  'source-only': 'Install',
+}
+const ODDITY_LABEL: Record<Oddity['kind'], string> = {
+  'pipe-to-shell': 'Downloaded script',
+  'remote-source': 'Outside a registry',
+  tap: 'Third-party tap',
+  unreadable: 'Unreadable name',
+}
+
+/** The first concern of a held command: what the heading and the dialog's chip name. */
+const concern = (packages: readonly Checked[], oddities: readonly Oddity[]) => {
+  const flag = packages.flatMap(one => one.flags).find(one => one.level === 'risk')
+  const [oddity] = oddities
+
+  if (flag !== undefined) {
+    return { label: flag.label, chip: CHIP[flag.kind] }
+  }
+
+  return oddity === undefined ? { label: 'New package', chip: 'Install' } : { label: ODDITY_LABEL[oddity.kind], chip: oddity.kind === 'pipe-to-shell' ? 'Remote code' : 'Install' }
+}
 
 const pypiName = (name: string) => name.toLowerCase().replace(/[-_.]+/g, '-')
 
@@ -165,8 +198,23 @@ const check = async ($: EngineInterface, requests: readonly Request[], threshold
       const flags = assess(request, facts, thresholds, at)
       // A deprecated package that is about to be run, not only stored, is worth a look.
       const raised = flags.map(flag => (flag.kind === 'deprecated' && request.isExecuted ? { ...flag, level: 'risk' as const } : flag))
+      const near = raised.find(flag => flag.near !== undefined)?.near
 
-      return { ...request, facts, flags: raised }
+      if (near === undefined) {
+        return { ...request, facts, flags: raised, lookalike: null }
+      }
+
+      // The package it looks like is asked about too, so both can be shown side by side.
+      const known = await lookup(fetch, { ...request, name: near, version: null })
+      const weekly = known.isFound ? known.weeklyDownloads : null
+      const used = weekly === null ? '' : ` (${compact(weekly)} downloads a week)`
+
+      return {
+        ...request,
+        facts,
+        flags: raised.map(flag => (flag.kind === 'typosquat' ? { ...flag, text: `looks like ${near}${used}, which is a different package` } : flag)),
+        lookalike: { name: near, weeklyDownloads: weekly },
+      }
     }),
   )
 }
@@ -180,11 +228,9 @@ const allow = async ($: EngineInterface, keys: readonly string[]) => {
 /** The held command's report, drawn in the pane while the question is up. */
 const report = ($: EngineInterface, e: Parameters<EngineInterface['ui']['resolve']>[0], holding: Held, at: number) => {
   const { Box, Text } = $.ui.resolve(e)
-  const flagged = holding.packages.filter(isRisky)
-
   return (
     <Box flexDirection="column">
-      <Text bold color="warning">{`Held before it runs: ${flagged.length + holding.oddities.length || holding.packages.length} to look at`}</Text>
+      <Text bold color="warning">{`Held before it runs: ${concern(holding.packages, holding.oddities).label.toLowerCase()}`}</Text>
       <Text dimColor wrap="truncate-end">{`$ ${holding.command.replace(/\s+/g, ' ')}`}</Text>
       {holding.packages.map(one => (
         <Box flexDirection="column" marginTop={1}>
@@ -194,8 +240,17 @@ const report = ($: EngineInterface, e: Parameters<EngineInterface['ui']['resolve
             <Text dimColor>{`  ${registryName(one.ecosystem)} · ${one.via}`}</Text>
           </Box>
           {one.flags.map(flag => (
-            <Text color={flag.level === 'risk' ? 'warning' : undefined} dimColor={flag.level === 'note'}>{`    ${flag.text}`}</Text>
+            <Box flexDirection="row">
+              <Text bold color={flag.level === 'risk' ? 'warning' : undefined} dimColor={flag.level === 'note'}>{`    ${flag.label}: `}</Text>
+              <Text color={flag.level === 'risk' ? 'warning' : undefined} dimColor={flag.level === 'note'}>{flag.text}</Text>
+            </Box>
           ))}
+          {one.lookalike !== null && (
+            <Box flexDirection="column" marginTop={1}>
+              <Text>{`    You asked for  ${titled(one)}${one.facts.weeklyDownloads === null ? '' : ` · ${compact(one.facts.weeklyDownloads)} a week`}`}</Text>
+              <Text color="success">{`    You may mean   ${one.lookalike.name}${one.lookalike.weeklyDownloads === null ? '' : ` · ${compact(one.lookalike.weeklyDownloads)} a week`}`}</Text>
+            </Box>
+          )}
         </Box>
       ))}
       {holding.oddities.map(one => (
@@ -212,13 +267,13 @@ const report = ($: EngineInterface, e: Parameters<EngineInterface['ui']['resolve
 }
 
 /** The question the dialog asks: what was flagged, then the command. */
-const question = (command: string, flagged: readonly string[], asked: number) => {
+const question = (command: string, flagged: readonly string[], asked: number, lead: string) => {
   const shown = flagged.slice(0, 4)
   const rest = flagged.length > shown.length ? ` (+${flagged.length - shown.length} more in the pane)` : ''
   const what = shown.length === 0 ? `${asked} new package${asked === 1 ? '' : 's'} this project does not have yet` : shown.join(' | ')
   const line = command.replace(/\s+/g, ' ').trim()
 
-  return `Install Guard: ${what}${rest}. Run \`${line.length > 120 ? `${line.slice(0, 120)}…` : line}\`?`
+  return `${lead}: ${what}${rest}. Run \`${line.length > 120 ? `${line.slice(0, 120)}…` : line}\`?`
 }
 
 export const register: Register = (on, options) => {
@@ -274,7 +329,7 @@ export const register: Register = (on, options) => {
         return { text: 'Install Guard: nothing to check.' }
       }
 
-      const told = one.flags.length === 0 ? ['nothing flagged'] : one.flags.map(flag => `${flag.level === 'risk' ? '!' : '·'} ${flag.text}`)
+      const told = one.flags.length === 0 ? ['nothing flagged'] : one.flags.map(flag => `${flag.level === 'risk' ? '!' : '·'} ${flag.label}: ${flag.text}`)
 
       return { text: [`${summary(one, one.facts, await $.clock.now())} (${registryName(ecosystem)})`, ...told.map(line => `  ${line}`)].join('\n') }
     }
@@ -338,8 +393,9 @@ export const register: Register = (on, options) => {
     void $.ui.open({ id: PANE, title: TITLE }).catch(() => undefined)
 
     try {
-      const answered = await $.ui.ask(question(e.command, flagged, fresh.length), {
-        header: 'Install',
+      const first = concern(packages, found.oddities)
+      const answered = await $.ui.ask(question(e.command, flagged, fresh.length, flagged.length === 0 ? 'Install Guard' : `Install Guard, ${first.label.toLowerCase()}`), {
+        header: flagged.length === 0 ? 'Install' : first.chip,
         options: canAlways ? [ANSWER.cancel, ANSWER.install, ANSWER.always] : [ANSWER.cancel, ANSWER.install],
       })
 
@@ -425,7 +481,7 @@ export const register: Register = (on, options) => {
               <Box flexDirection="column">
                 <Text>{`  ${one.facts.isFound ? summary(one, one.facts, at) : titled(one)}`}</Text>
                 {one.flags.filter(flag => flag.level === 'risk').map(flag => (
-                  <Text color="warning">{`    ${flag.text}`}</Text>
+                  <Text color="warning">{`    ${flag.label}: ${flag.text}`}</Text>
                 ))}
               </Box>
             ))}

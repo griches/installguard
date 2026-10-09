@@ -98,7 +98,7 @@ export const assess = (request: Request, facts: Facts, thresholds: Thresholds, n
   const registry = REGISTRY[request.ecosystem]
 
   if (!facts.isChecked) {
-    return [{ kind: 'unchecked', level: thresholds.holdsUnchecked ? 'risk' : 'note', text: `${registry} could not be reached, so it was not checked` }]
+    return [{ kind: 'unchecked', label: 'Not checked', level: thresholds.holdsUnchecked ? 'risk' : 'note', text: `${registry} could not be reached, so it was not checked` }]
   }
 
   const near = lookalike(request.ecosystem, request.name)
@@ -106,39 +106,39 @@ export const assess = (request: Request, facts: Facts, thresholds: Thresholds, n
   if (!facts.isFound) {
     const hint = near === null ? '' : `; did you mean ${near}?`
 
-    return [{ kind: 'missing', level: 'risk', text: `not on ${registry}: the name may be made up or private${hint}` }]
+    return [{ kind: 'missing', label: 'Unknown package', level: 'risk', text: `not on ${registry}: the name may be made up or private${hint}`, ...(near === null ? {} : { near }) }]
   }
 
   const flags: Flag[] = []
   const isEstablished = (facts.weeklyDownloads ?? 0) >= ESTABLISHED
 
   if (near !== null && !isEstablished) {
-    flags.push({ kind: 'typosquat', level: 'risk', text: `looks like ${near}, which is a different package` })
+    flags.push({ kind: 'typosquat', label: 'Possible typosquat', level: 'risk', text: `looks like ${near}, which is a different package`, near })
   }
 
   if (facts.createdAt !== null && now - facts.createdAt < thresholds.minAgeDays * DAY) {
-    flags.push({ kind: 'new', level: 'risk', text: `first published ${span(Math.max(0, now - facts.createdAt))} ago` })
+    flags.push({ kind: 'new', label: 'New package', level: 'risk', text: `first published ${span(Math.max(0, now - facts.createdAt))} ago` })
   }
 
   if (facts.publishedAt !== null && now - facts.publishedAt < thresholds.cooldownDays * DAY) {
     const version = facts.version === null ? 'this version' : `version ${facts.version}`
-    flags.push({ kind: 'fresh', level: 'risk', text: `${version} is ${span(Math.max(0, now - facts.publishedAt))} old` })
+    flags.push({ kind: 'fresh', label: 'Fresh release', level: 'risk', text: `${version} is ${span(Math.max(0, now - facts.publishedAt))} old` })
   }
 
   if (facts.weeklyDownloads !== null && facts.weeklyDownloads < thresholds.minWeeklyDownloads) {
-    flags.push({ kind: 'unpopular', level: 'risk', text: `${compact(facts.weeklyDownloads)} downloads a week` })
+    flags.push({ kind: 'unpopular', label: 'Little used', level: 'risk', text: `${compact(facts.weeklyDownloads)} downloads a week` })
   }
 
   if (facts.hasInstallScript) {
-    flags.push({ kind: 'script', level: 'note', text: 'runs a script of its own when installed' })
+    flags.push({ kind: 'script', label: 'Install script', level: 'note', text: 'runs a script of its own when installed' })
   }
 
   if (facts.isSourceOnly) {
-    flags.push({ kind: 'source-only', level: 'note', text: 'ships source only, so installing runs its build code' })
+    flags.push({ kind: 'source-only', label: 'Source only', level: 'note', text: 'ships source only, so installing runs its build code' })
   }
 
   if (facts.isDeprecated) {
-    flags.push({ kind: 'deprecated', level: 'note', text: 'deprecated by its author' })
+    flags.push({ kind: 'deprecated', label: 'Deprecated', level: 'note', text: 'its author has withdrawn it' })
   }
 
   return flags

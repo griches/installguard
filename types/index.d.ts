@@ -41,12 +41,18 @@ export type Flag = {
   kind: 'missing' | 'typosquat' | 'new' | 'fresh' | 'unpopular' | 'unchecked' | 'script' | 'deprecated' | 'source-only'
   /** `risk` holds the command for an answer; `note` is only shown. */
   level: 'risk' | 'note'
+  /** The kind of concern in two or three words, shown before the detail: `Possible typosquat`. */
+  label: string
   text: string
+  /** The well-known package this one could be mistaken for, when that is the concern. */
+  near?: string
 }
 
 export type Checked = Request & {
   facts: Facts
   flags: Flag[]
+  /** The package this one looks like, with what its registry says of it. */
+  lookalike: { name: string; weeklyDownloads: number | null } | null
 }
 
 export type Held = {

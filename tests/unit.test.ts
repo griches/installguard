@@ -175,13 +175,13 @@ describe('what is flagged', () => {
   test('a fresh release of an established package', async () => {
     const asked = request('npm', 'chalk')
     const flags = assess(asked, await lookup(get, asked), BALANCED, NOW)
-    expect(flags).toEqual([{ kind: 'fresh', level: 'risk', text: 'version 5.6.1 is 9 hours old' }])
+    expect(flags).toEqual([{ kind: 'fresh', label: 'Fresh release', level: 'risk', text: 'version 5.6.1 is 9 hours old' }])
   })
 
   test('a name no registry has, with the package it may have meant', async () => {
     const asked = request('npm', 'react-codeshift-utils')
     expect(assess(asked, await lookup(get, asked), BALANCED, NOW)).toEqual([
-      { kind: 'missing', level: 'risk', text: 'not on npm: the name may be made up or private' },
+      { kind: 'missing', label: 'Unknown package', level: 'risk', text: 'not on npm: the name may be made up or private' },
     ])
     const near = request('pypi', 'reqests')
     expect(assess(near, { ...(await lookup(get, asked)) }, BALANCED, NOW)[0]?.text).toBe(

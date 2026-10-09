@@ -72,15 +72,32 @@ A package with nothing flagged installs, with a short toast:
 ✓ express 5.2.1 · 141M a week
 ```
 
-A flagged command is held and Claude Code's own question dialog asks:
+A flagged command is held and Claude Code's own question dialog asks, naming the kind of concern first:
 
 ```
-Install Guard: expresss (npm): looks like express, which is a different package;
+Typosquat?
+
+Install Guard, possible typosquat: expresss (npm): possible typosquat, looks like
+express (141M downloads a week), which is a different package; little used,
 693 downloads a week. Run `npm install expresss`?
 
   1. Cancel
   2. Run it once
   3. Run it and always allow
+```
+
+The pane beside it puts the two packages side by side:
+
+```
+Held before it runs: possible typosquat
+$ npm install expresss
+
+! expresss 0.0.0 · 10 years old · 693 a week
+    Possible typosquat: looks like express (141M downloads a week), which is a different package
+    Little used: 693 downloads a week
+
+    You asked for  expresss · 693 a week
+    You may mean   express · 141M a week
 ```
 
 ![The question on the left and the report pane on the right while an install is held](docs/held.png)

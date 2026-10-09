@@ -150,13 +150,13 @@ test('a lookalike is held with the reasons in the question, and Cancel refuses i
   expect(seen.asked).toEqual([
     {
       question:
-        'Install Guard: expresss (npm): looks like express, which is a different package; first published 3 days ago; version 1.0.1 is 9 hours old; 41 downloads a week. Run `npm install expresss`?',
-      header: 'Install',
+        'Install Guard, possible typosquat: expresss (npm): possible typosquat, looks like express (169M downloads a week), which is a different package; new package, first published 3 days ago; fresh release, version 1.0.1 is 9 hours old; little used, 41 downloads a week. Run `npm install expresss`?',
+      header: 'Typosquat?',
       options: ['Cancel', 'Run it once', 'Run it and always allow'],
     },
   ])
   expect(ran.deny).toContain('the user chose Cancel')
-  expect(ran.deny).toContain('expresss (npm): looks like express, which is a different package; first published 3 days ago')
+  expect(ran.deny).toContain('expresss (npm): possible typosquat, looks like express (169M downloads a week), which is a different package; new package, first published 3 days ago')
   expect(ran.deny).toContain('41 downloads a week')
 })
 
@@ -202,16 +202,16 @@ test('a name no registry has is held, and so is a days-old release of a trusted 
   const seen = world(on, { answers: ['Cancel', 'Cancel'] })
 
   expect((await bash($, 'npm install react-codeshift-utils', 'toolu_1')).deny).toContain(
-    'react-codeshift-utils (npm): not on npm: the name may be made up or private',
+    'react-codeshift-utils (npm): unknown package, not on npm: the name may be made up or private',
   )
-  expect((await bash($, 'npm install chalk', 'toolu_2')).deny).toContain('chalk (npm): version 5.6.1 is 9 hours old')
+  expect((await bash($, 'npm install chalk', 'toolu_2')).deny).toContain('chalk (npm): fresh release, version 5.6.1 is 9 hours old')
   expect(seen.ran).toEqual([])
 })
 
 test('npx of a deprecated package that is not installed here is held', async ($, on) => {
   world(on, { answers: ['Cancel'] })
 
-  expect((await bash($, 'npx tsc --noEmit')).deny).toContain('tsc (npm): deprecated by its author')
+  expect((await bash($, 'npx tsc --noEmit')).deny).toContain('tsc (npm): deprecated, its author has withdrawn it')
 })
 
 test('a script piped into a shell is held, with no always-allow', async ($, on) => {
@@ -234,8 +234,10 @@ test('the pane draws the whole report while the question is up', async ($, on) =
       drawn = [
         (await ui.find({ type: 'Text', text: /^Held before it runs/ }))?.text,
         (await ui.find({ type: 'Text', text: /^reqeusts 0\.0\.1/ }))?.text,
+        (await ui.find({ type: 'Text', text: /Possible typosquat/ }))?.text,
         (await ui.find({ type: 'Text', text: /looks like requests/ }))?.text,
-        (await ui.find({ type: 'Text', text: /ships source only/ }))?.text,
+        (await ui.find({ type: 'Text', text: /You asked for/ }))?.text,
+        (await ui.find({ type: 'Text', text: /You may mean/ }))?.text,
       ]
       await ui.unmount()
     },
@@ -244,10 +246,12 @@ test('the pane draws the whole report while the question is up', async ($, on) =
   await bash($, 'pip install reqeusts')
 
   expect(drawn).toEqual([
-    'Held before it runs: 1 to look at',
+    'Held before it runs: possible typosquat',
     'reqeusts 0.0.1 · 9 days old · 12 a week',
-    '    looks like requests, which is a different package',
-    '    ships source only, so installing runs its build code',
+    '    Possible typosquat: ',
+    'looks like requests (306M downloads a week), which is a different package',
+    '    You asked for  reqeusts · 12 a week',
+    '    You may mean   requests · 306M a week',
   ])
   expect(seen.ran).toEqual([])
 })
@@ -263,7 +267,7 @@ test('an unreachable registry lets the command run unless told to hold', async (
 test('with unreachable set to hold, an unchecked package waits for an answer', { options: { unreachable: 'hold' } }, async ($, on) => {
   world(on, { answers: ['Cancel'] })
 
-  expect((await bash($, 'npm install never-listed')).deny).toContain('npm could not be reached')
+  expect((await bash($, 'npm install never-listed')).deny).toContain('not checked, npm could not be reached')
 })
 
 test('with hold set to always, an established package is held too', { options: { hold: 'always' } }, async ($, on) => {
@@ -271,6 +275,7 @@ test('with hold set to always, an established package is held too', { options: {
 
   expect((await bash($, 'npm install express')).deny).toBeUndefined()
   expect(seen.asked[0]?.question).toBe('Install Guard: 1 new package this project does not have yet. Run `npm install express`?')
+  expect(seen.asked[0]?.header).toBe('Install')
   expect(seen.ran).toEqual(['npm install express'])
 })
 
@@ -278,7 +283,14 @@ test('/installguard checks a package by name, allows one, and forgets', async ($
   const seen = world(on)
 
   expect((await slash($, 'check expresss')).text).toBe(
-    ['expresss 1.0.1 · 3 days old · 41 a week (npm)', '  ! looks like express, which is a different package', '  ! first published 3 days ago', '  ! version 1.0.1 is 9 hours old', '  ! 41 downloads a week', '  · runs a script of its own when installed'].join('\n'),
+    [
+      'expresss 1.0.1 · 3 days old · 41 a week (npm)',
+      '  ! Possible typosquat: looks like express (169M downloads a week), which is a different package',
+      '  ! New package: first published 3 days ago',
+      '  ! Fresh release: version 1.0.1 is 9 hours old',
+      '  ! Little used: 41 downloads a week',
+      '  · Install script: runs a script of its own when installed',
+    ].join('\n'),
   )
   expect((await slash($, 'check pypi:requests')).text).toBe('requests 2.34.2 · 15 years old · 306M a week (PyPI)\n  nothing flagged')
 
@@ -300,6 +312,7 @@ test('the pane lists what was checked in the session', async ($, on) => {
     const ui = await $.ui.mount({ ...PANE, surface })
     expect(await ui.find({ type: 'Text', text: 'flagged, cancelled' })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /expresss 1\.0\.1 · 3 days old/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^ {4}Possible typosquat: looks like express/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: 'nothing flagged' })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: 'No package is always allowed.' })).toBeDefined()
     await ui.unmount()
