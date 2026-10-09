@@ -6,14 +6,14 @@ installguard is a Claude Code mod written by Gary Riches. This page says what da
 
 When Claude is about to install a package your project does not already have, installguard asks that package's public registry about it. The request contains the package's name, and its version when you pinned one. Nothing else is sent.
 
-| Host | Operated by | Asked for |
-| --- | --- | --- |
-| `registry.npmjs.org` | npm, Inc. | An npm package's version, publish dates, install scripts and deprecation |
-| `api.npmjs.org` | npm, Inc. | An npm package's weekly downloads |
-| `pypi.org` | Python Software Foundation | A PyPI package's releases and their dates |
-| `pypistats.org` | PyPI Stats | A PyPI package's weekly downloads |
-| `crates.io` | Rust Foundation | A crate's versions, dates and recent downloads |
-| `rubygems.org` | RubyGems | A gem's versions and dates |
+| Host | Asked for |
+| --- | --- |
+| `registry.npmjs.org` | An npm package's version, publish dates, install scripts and deprecation |
+| `api.npmjs.org` | An npm package's weekly downloads |
+| `pypi.org` | A PyPI package's releases and their dates |
+| `pypistats.org` | A PyPI package's weekly downloads |
+| `crates.io` | A crate's versions, dates and recent downloads |
+| `rubygems.org` | A gem's versions and dates |
 
 These are the same registries your package manager contacts when it installs the package. Each one sees the request as it would see any other, including your IP address, and handles it under its own privacy policy.
 
