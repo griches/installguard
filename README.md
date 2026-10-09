@@ -120,9 +120,32 @@ All under installguard in `/config`.
 - A private package is "not on the registry" as far as the public registry knows. Answer once with "always allow".
 - It is a second look, not a scanner: it does not read the package's code.
 
-## Privacy
+## What it does on your machine
 
-To check a package, installguard asks the public registry about that package by name: registry.npmjs.org and api.npmjs.org, pypi.org and pypistats.org, crates.io, rubygems.org. Nothing else is sent, no account is involved, and no model is called. The allowed list is kept on your machine.
+installguard is a mod: code that runs inside Claude Code. This is everything it does.
+
+**It watches Bash commands.** It hooks the Bash tool and reads the text of each command before it runs. A command that adds no new package is passed on untouched. It never changes a command, and it runs no command of its own.
+
+**It reads five files in your project folder**, to learn which packages you already depend on: `package.json`, `requirements.txt`, `pyproject.toml`, `Cargo.toml` and `Gemfile`. It also checks whether `node_modules/.bin/<name>` exists. Nothing from these files leaves your machine.
+
+**It asks a public registry about a package, by name.** These are the only hosts it contacts, and the package's name and version are the only things it sends:
+
+| Host | Asked for |
+| --- | --- |
+| `registry.npmjs.org` | An npm package's version, publish dates, install scripts and deprecation |
+| `api.npmjs.org` | An npm package's weekly downloads |
+| `pypi.org` | A PyPI package's releases and their dates |
+| `pypistats.org` | A PyPI package's weekly downloads |
+| `crates.io` | A crate's versions, dates and recent downloads |
+| `rubygems.org` | A gem's versions and dates |
+
+It sends no part of your conversation, your code, your files or the command itself. It has no account, no telemetry and no server of its own, and it calls no model.
+
+**It can refuse a command.** When you choose Cancel, when the question is dismissed, or when the guard itself fails on an install command, the command is not run and Claude is told why.
+
+**It keeps one thing between sessions**: the list of packages you chose to always allow, in Claude Code's own plugin storage.
+
+**It adds** the `/installguard` command, a pane, and a question in Claude Code's own dialog. It adds no tools for the model.
 
 ## Security
 

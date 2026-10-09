@@ -120,11 +120,34 @@ const declared = async ($: EngineInterface, cwd: string): Promise<Set<string>> =
   return names
 }
 
+/**
+ * Asks a registry about a package. Every request the mod makes is made here, to one of
+ * six fixed public hosts, and carries nothing but the package's name in its address.
+ */
 const get =
   ($: EngineInterface): Get =>
   async url => {
+    const init = { headers: { 'user-agent': USER_AGENT, accept: 'application/json' } }
+    const rest = url.slice(url.indexOf('/', 8) + 1)
+
     try {
-      const answered = await $.http.fetch(url, { headers: { 'user-agent': USER_AGENT, accept: 'application/json' } })
+      let answered
+
+      if (url.startsWith('https://registry.npmjs.org/')) {
+        answered = await $.http.fetch(`https://registry.npmjs.org/${rest}`, init)
+      } else if (url.startsWith('https://api.npmjs.org/')) {
+        answered = await $.http.fetch(`https://api.npmjs.org/${rest}`, init)
+      } else if (url.startsWith('https://pypi.org/')) {
+        answered = await $.http.fetch(`https://pypi.org/${rest}`, init)
+      } else if (url.startsWith('https://pypistats.org/')) {
+        answered = await $.http.fetch(`https://pypistats.org/${rest}`, init)
+      } else if (url.startsWith('https://crates.io/')) {
+        answered = await $.http.fetch(`https://crates.io/${rest}`, init)
+      } else if (url.startsWith('https://rubygems.org/')) {
+        answered = await $.http.fetch(`https://rubygems.org/${rest}`, init)
+      } else {
+        return null
+      }
 
       return { status: answered.status, text: answered.text }
     } catch {
