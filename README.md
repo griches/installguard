@@ -1,5 +1,9 @@
 # installguard
 
+[![GitHub stars](https://img.shields.io/github/stars/griches/installguard?style=social)](https://github.com/griches/installguard)
+[![CI](https://github.com/griches/installguard/actions/workflows/ci.yml/badge.svg)](https://github.com/griches/installguard/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/griches/installguard.svg)](LICENSE)
+
 **Looks up every new package before Claude installs it.**
 
 installguard is a Claude Code mod. When Claude is about to add a package your project does not already have, installguard asks the registry about it first. An established package installs without a word. A name that does not exist, a lookalike of a popular package, a release that is hours old, or a script piped from the internet into a shell is held, and you are asked before anything runs.
