@@ -12,6 +12,8 @@ installguard is a Claude Code mod. When Claude is about to add a package your pr
 
 Coding agents invent package names, and attackers register the names they invent. They also install whatever the newest version is, minutes after it is published. installguard is the check a careful person would make, made every time.
 
+Using GitHub Copilot CLI? [installguard-copilot](https://github.com/griches/installguard-copilot) is the same guard as a Copilot CLI plugin. Both share one detection core.
+
 ## Install
 
 Needs Claude Code 2.1.295 or later.
