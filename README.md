@@ -139,7 +139,7 @@ installguard is a mod: code that runs inside Claude Code. This is everything it 
 | `crates.io` | A crate's versions, dates and recent downloads |
 | `rubygems.org` | A gem's versions and dates |
 
-It sends no part of your conversation, your code, your files or the command itself. It has no account, no telemetry and no server of its own, and it calls no model.
+It sends no part of your conversation, your code, your files or the command itself. The full statement is in [PRIVACY.md](PRIVACY.md). It has no account, no telemetry and no server of its own, and it calls no model.
 
 **It can refuse a command.** When you choose Cancel, when the question is dismissed, or when the guard itself fails on an install command, the command is not run and Claude is told why.
 
