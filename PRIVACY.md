@@ -15,7 +15,7 @@ When Claude is about to install a package your project does not already have, in
 | `crates.io` | A crate's versions, dates and recent downloads |
 | `rubygems.org` | A gem's versions and dates |
 
-These are the same registries your package manager contacts when it installs the package. Each one sees the request as it would see any other, including your IP address, and handles it under its own privacy policy.
+Four of these are the registries your package manager contacts when it installs the package. `api.npmjs.org` and `pypistats.org` are the services that publish download counts for npm and PyPI. Each one sees the request as it would see any other, including your IP address, and handles it under its own privacy policy.
 
 A registry is asked only about a package named in a command that is about to run, or one you look up yourself with `/installguard check`.
 
