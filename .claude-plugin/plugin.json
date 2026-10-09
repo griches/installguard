@@ -1,7 +1,7 @@
 {
   "name": "installguard",
   "displayName": "Install Guard",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Looks up every new package before it installs: holds made-up names, typosquats, days-old releases and curl-into-shell for your answer, and lets the rest through.",
   "author": {
     "name": "Gary Riches",

@@ -4,6 +4,8 @@
 
 installguard is a Claude Code mod. When Claude is about to add a package your project does not already have, installguard asks the registry about it first. An established package installs without a word. A name that does not exist, a lookalike of a popular package, a release that is hours old, or a script piped from the internet into a shell is held, and you are asked before anything runs.
 
+![An install of a lookalike package held with a question, then cancelled](docs/installguard.gif)
+
 Coding agents invent package names, and attackers register the names they invent. They also install whatever the newest version is, minutes after it is published. installguard is the check a careful person would make, made every time.
 
 ## Install
@@ -80,6 +82,8 @@ Install Guard: expresss (npm): looks like express, which is a different package;
   2. Run it once
   3. Run it and always allow
 ```
+
+![The question on the left and the report pane on the right while an install is held](docs/held.png)
 
 - **Cancel** refuses the command and tells Claude why, so it can offer the package you meant.
 - **Run it once** runs it. The package is asked about again next time.
