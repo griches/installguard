@@ -28,12 +28,18 @@ export const WEB: Record<string, { status: number; text: string }> = {
     objects: [{ package: { name: 'chalk', version: '5.6.1', date: '2026-10-09T03:00:00.000Z' } }],
   }),
 
-  // chalk pinned to that same nine-hour-old version: only the whole record has its date.
+  // chalk pinned to that same nine-hour-old version. Its whole record is too large to read, as
+  // every much-used package's is, so deps.dev is asked for the one version's date.
   'https://registry.npmjs.org/chalk/5.6.1': body({ name: 'chalk', version: '5.6.1' }),
-  'https://registry.npmjs.org/chalk': body({
-    time: { created: '2013-08-03T00:21:56.318Z', '5.6.0': '2026-08-01T10:00:00.000Z', '5.6.1': '2026-10-09T03:00:00.000Z' },
-  }),
-  // express pinned, with its whole record out of reach.
+  'https://api.deps.dev/v3/systems/npm/packages/chalk/versions/5.6.1': body({ versionKey: { system: 'NPM', name: 'chalk', version: '5.6.1' }, publishedAt: '2026-10-09T03:00:00Z' }),
+  // chalk pinned to a version npm has and deps.dev has not seen yet: minutes old.
+  'https://registry.npmjs.org/chalk/5.6.2': body({ name: 'chalk', version: '5.6.2' }),
+  'https://api.deps.dev/v3/systems/npm/packages/chalk/versions/5.6.2': missing,
+  // a scoped package, pinned to an old version.
+  'https://registry.npmjs.org/@types%2Fnode/22.1.0': body({ name: '@types/node', version: '22.1.0' }),
+  'https://api.npmjs.org/downloads/point/last-week/@types/node': body({ downloads: 456_237_880, package: '@types/node' }),
+  'https://api.deps.dev/v3/systems/npm/packages/%40types%2Fnode/versions/22.1.0': body({ publishedAt: '2024-08-02T11:07:12Z' }),
+  // express pinned, with no dated record in reach.
   'https://registry.npmjs.org/express/5.2.1': body({ name: 'express', version: '5.2.1' }),
 
   // tsc: not the TypeScript compiler, and deprecated by npm.

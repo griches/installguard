@@ -31,6 +31,8 @@ export type Facts = {
   /** When the version asked for was published, in milliseconds. */
   publishedAt: number | null
   weeklyDownloads: number | null
+  /** True when the version is on the registry but too new for any dated record of it to exist yet. */
+  isTooNewToDate?: boolean
   hasInstallScript: boolean
   isDeprecated: boolean
   /** True when the version has no built distribution, so installing it runs its build code. */

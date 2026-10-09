@@ -50,7 +50,7 @@ Outside a registry, these are always held:
 | Not on the registry | The name may be made up, misspelt or private. The nearest known name is suggested | |
 | Lookalike | One edit, one swap or one dropped separator away from a well-known package, and not widely used itself | |
 | New package | First published recently | 30 days |
-| Fresh version | The version that would install is very new. Most poisoned releases are pulled within days | 3 days |
+| Fresh version | The version that would install is very new, or so new that no dated record of it exists yet. Most poisoned releases are pulled within days. A pinned version is checked too | 3 days |
 | Release date unknown | A version you pinned whose date the registry did not give, so its age could not be checked. Shown, and held when unreachable registries are set to hold | |
 | Little used | Few downloads a week | 1,000 |
 | Deprecated and about to run | `npx` of a package its author has withdrawn, such as `npx tsc` without TypeScript installed | |
@@ -162,6 +162,7 @@ installguard is a mod: code that runs inside Claude Code. This is everything it 
 | `pypistats.org` | A PyPI package's weekly downloads |
 | `crates.io` | A crate's versions, dates and recent downloads |
 | `rubygems.org` | A gem's versions and dates |
+| `api.deps.dev` | The publish date of one npm version you pinned, when the package is too large to ask npm for it |
 
 It sends no part of your conversation, your code, your files or the command itself. The full statement is in [PRIVACY.md](PRIVACY.md). It has no account, no telemetry and no server of its own, and it calls no model.
 

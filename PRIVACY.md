@@ -14,8 +14,9 @@ When Claude is about to install a package your project does not already have, in
 | `pypistats.org` | A PyPI package's weekly downloads |
 | `crates.io` | A crate's versions, dates and recent downloads |
 | `rubygems.org` | A gem's versions and dates |
+| `api.deps.dev` | The publish date of one npm version you pinned, when the package is too large to ask npm for it |
 
-Four of these are the registries your package manager contacts when it installs the package. `api.npmjs.org` and `pypistats.org` are the services that publish download counts for npm and PyPI. Each one sees the request as it would see any other, including your IP address, and handles it under its own privacy policy.
+Four of these are the registries your package manager contacts when it installs the package. `api.npmjs.org` and `pypistats.org` are the services that publish download counts for npm and PyPI. `api.deps.dev` is Google's Open Source Insights, which mirrors npm's release dates. Each one sees the request as it would see any other, including your IP address, and handles it under its own privacy policy.
 
 A registry is asked only about a package named in a command that is about to run, or one you look up yourself with `/installguard check`.
 

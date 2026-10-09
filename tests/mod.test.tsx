@@ -334,7 +334,7 @@ test('a pinned release an hour or so old of a much-used package is held', async 
 
   const ran = await bash($, 'npm install chalk@5.6.1')
 
-  expect(seen.fetched).toContain('https://registry.npmjs.org/chalk')
+  expect(seen.fetched).toContain('https://api.deps.dev/v3/systems/npm/packages/chalk/versions/5.6.1')
   expect(ran.deny).toContain('chalk@5.6.1 (npm): fresh release, version 5.6.1 is 9 hours old')
   expect(seen.ran).toEqual([])
 })

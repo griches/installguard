@@ -125,8 +125,12 @@ export const assess = (request: Request, facts: Facts, thresholds: Thresholds, n
     flags.push({ kind: 'fresh', label: 'Fresh release', level: 'risk', text: `${version} is ${span(Math.max(0, now - facts.publishedAt))} old` })
   }
 
+  if (facts.isTooNewToDate === true) {
+    flags.push({ kind: 'fresh', label: 'Fresh release', level: 'risk', text: `version ${facts.version ?? request.version} is too new to have a publish date on record yet` })
+  }
+
   // A version asked for by number whose date the registry did not give cannot be called old enough.
-  if (request.version !== null && facts.version === request.version && facts.publishedAt === null && request.ecosystem !== 'rubygems') {
+  if (facts.isTooNewToDate !== true && request.version !== null && facts.version === request.version && facts.publishedAt === null && request.ecosystem !== 'rubygems') {
     flags.push({
       kind: 'undated',
       label: 'Release date unknown',

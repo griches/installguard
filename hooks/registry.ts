@@ -81,9 +81,9 @@ const npm = async (get: Get, request: Request): Promise<Facts> => {
   let createdAt: number | null = null
   let publishedAt: number | null = null
 
-  // A pinned version's date is only in the package's whole record, however large that is:
-  // a release an hour old must not pass for want of asking.
-  if (weeklyDownloads === null || weeklyDownloads < SMALL_PACKAGE || request.version !== null) {
+  let isTooNewToDate = false
+
+  if (weeklyDownloads === null || weeklyDownloads < SMALL_PACKAGE) {
     const times = record(json((await get(`https://registry.npmjs.org/${name}`))?.text)?.time)
     createdAt = time(times.created)
     publishedAt = version === null ? null : time(times[version])
@@ -93,6 +93,16 @@ const npm = async (get: Get, request: Request): Promise<Facts> => {
     publishedAt = own?.version === version ? time(own?.date) : null
   }
 
+  // A pinned version must have its own date checked, however used the package is. A much-used
+  // package's whole record runs to megabytes and cannot be read here, so the one version is
+  // asked of deps.dev, which mirrors npm's dates. A version npm has and deps.dev has not yet
+  // seen was published within the last hours: that is what a fresh release is.
+  if (request.version !== null && version === request.version && publishedAt === null) {
+    const dated = await get(`https://api.deps.dev/v3/systems/npm/packages/${encodeURIComponent(request.name)}/versions/${encodeURIComponent(version)}`)
+    publishedAt = dated?.status === 200 ? time(json(dated.text)?.publishedAt) : null
+    isTooNewToDate = dated?.status === 404
+  }
+
   return {
     isChecked: true,
     isFound: true,
@@ -100,6 +110,7 @@ const npm = async (get: Get, request: Request): Promise<Facts> => {
     createdAt,
     publishedAt,
     weeklyDownloads,
+    ...(isTooNewToDate ? { isTooNewToDate } : {}),
     hasInstallScript: ['preinstall', 'install', 'postinstall'].some(one => text(scripts[one]) !== null),
     isDeprecated: text(manifest.deprecated) !== null,
     isSourceOnly: false,

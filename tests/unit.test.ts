@@ -185,6 +185,16 @@ describe('what is flagged', () => {
     expect(assess(asked, facts, BALANCED, NOW).map(flag => `${flag.level}:${flag.kind}`)).toEqual(['risk:fresh'])
   })
 
+  test('a pinned version too new for any dated record is a fresh release, and an old pinned version passes', async () => {
+    const minutesOld = request('npm', 'chalk', { version: '5.6.2' })
+    expect(assess(minutesOld, await lookup(get, minutesOld), BALANCED, NOW)).toEqual([
+      { kind: 'fresh', label: 'Fresh release', level: 'risk', text: 'version 5.6.2 is too new to have a publish date on record yet' },
+    ])
+    const old = request('npm', '@types/node', { version: '22.1.0' })
+    expect(await lookup(get, old)).toMatchObject({ publishedAt: Date.parse('2024-08-02T11:07:12Z') })
+    expect(assess(old, await lookup(get, old), BALANCED, NOW)).toEqual([])
+  })
+
   test('a pinned version whose date cannot be read says so, and holds when told to', async () => {
     const asked = request('npm', 'express', { version: '5.2.1' })
     const facts = await lookup(get, asked)

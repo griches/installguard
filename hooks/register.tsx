@@ -156,7 +156,7 @@ const declared = async ($: EngineInterface, cwd: string): Promise<Set<string>> =
 
 /**
  * Asks a registry about a package. Every request the mod makes is made here, to one of
- * six fixed public hosts, and carries nothing but the package's name in its address.
+ * seven fixed public hosts, and carries nothing but the package's name in its address.
  */
 const get =
   ($: EngineInterface): Get =>
@@ -179,6 +179,8 @@ const get =
         answered = await $.http.fetch(`https://crates.io/${rest}`, init)
       } else if (url.startsWith('https://rubygems.org/')) {
         answered = await $.http.fetch(`https://rubygems.org/${rest}`, init)
+      } else if (url.startsWith('https://api.deps.dev/')) {
+        answered = await $.http.fetch(`https://api.deps.dev/${rest}`, init)
       } else {
         return null
       }
