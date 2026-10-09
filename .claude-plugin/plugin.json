@@ -1,6 +1,6 @@
 {
   "name": "installguard",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Looks up every new package before it installs: holds made-up names, typosquats, days-old releases and curl-into-shell for your answer, and lets the rest through.",
   "author": {
     "name": "Gary Riches",
@@ -8,6 +8,7 @@
   },
   "homepage": "https://github.com/griches/installguard",
   "repository": "https://github.com/griches/installguard",
+  "license": "MIT",
   "keywords": ["security", "supply-chain", "npm", "pypi", "cargo", "typosquatting", "slopsquatting", "guard", "mod"],
   "types": "./types/index.d.ts",
   "userConfig": {

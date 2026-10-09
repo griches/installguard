@@ -15,6 +15,8 @@ const ALLOWED_KEY = 'allowed'
 const KEPT_ENTRIES = 30
 const SHOWN_ENTRIES = 8
 const MOST_PACKAGES = 12
+/** What a registry accepts as a name: nothing that could reach outside the package's own address. */
+const PACKAGE_NAME = /^(?:@[a-z0-9~-][a-z0-9._~-]*\/)?[a-z0-9~-][a-z0-9._~-]*$/i
 const USER_AGENT = 'installguard (https://github.com/griches/installguard)'
 
 type Decision = 'install' | 'always' | 'cancel' | 'unanswered' | 'interrupted'
@@ -31,6 +33,7 @@ const ODDITY: Record<Oddity['kind'], (detail: string) => string> = {
   'pipe-to-shell': detail => `runs a script downloaded from ${detail} without showing it`,
   'remote-source': detail => `installs from ${detail}, which no registry vouches for`,
   tap: detail => `installs from the third-party tap ${detail}`,
+  unreadable: detail => `names its package through a shell variable, so \`${detail}\` could not be checked`,
 }
 
 const held = atom({ plugin: 'installguard', key: 'held' } as const, null)
@@ -225,6 +228,10 @@ export const register: Register = (on, options) => {
       await $.store.delete(ALLOWED_KEY).catch(() => undefined)
 
       return { text: 'Install Guard: the allowed list is empty again.' }
+    }
+
+    if ((verb === 'allow' || verb === 'check') && bare !== '' && !PACKAGE_NAME.test(bare)) {
+      return { text: `Install Guard: "${bare.slice(0, 80)}" is not a package name.` }
     }
 
     if ((verb === 'allow' || verb === 'check') && bare === '') {

@@ -171,15 +171,32 @@ const analyse = (words: Word[]): Command | null => {
   }
 }
 
+const HEREDOC = /<<-?\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\1/
+
+/** A command line without the bodies of its here-documents, which are text and not commands. */
+const withoutHeredocs = (command: string) => {
+  const kept: string[] = []
+  let end: string | null = null
+
+  for (const line of command.split('\n')) {
+    if (end !== null) {
+      end = line.trim() === end ? null : end
+    } else {
+      kept.push(line)
+      end = line.includes('<<<') ? null : (HEREDOC.exec(line)?.[2] ?? null)
+    }
+  }
+
+  return kept.join('\n')
+}
+
 /**
  * The commands a Bash command line runs, in order.
  *
  * Only a command standing at a command position counts: one inside a quoted
- * string, a `$(...)` or a here-document is text, not something that runs here.
+ * string, a `$(...)` or a here-document's body is text, not something that runs here.
  */
 export const commands = (command: string): Command[] =>
-  command.includes('<<')
-    ? []
-    : split(command)
-        .map(analyse)
-        .filter(one => one !== null)
+  split(withoutHeredocs(command))
+    .map(analyse)
+    .filter(one => one !== null)

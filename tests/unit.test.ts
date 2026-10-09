@@ -63,7 +63,6 @@ describe('which commands fetch packages', () => {
     expect(names('pip install -e .')).toEqual([])
     expect(names('npm install ./local-package ../other.tgz')).toEqual([])
     expect(names('cargo install --path .')).toEqual([])
-    expect(names('npm install $PACKAGE')).toEqual([])
     expect(names('npx --no-install eslint .')).toEqual([])
     expect(names('echo "npm install left-pad"')).toEqual([])
     expect(names('git commit -m "npm install express"')).toEqual([])
@@ -80,6 +79,24 @@ describe('which commands fetch packages', () => {
     expect(oddities('pip install --extra-index-url https://pkgs.example/simple acme-utils')).toEqual(['remote-source: index pkgs.example'])
     expect(oddities('cargo install --git https://github.com/someone/thing')).toEqual(['remote-source: https://github.com/someone/thing'])
     expect(oddities('brew install someone/tap/thing')).toEqual(['tap: someone/tap/thing'])
+  })
+
+  test('commands hidden in a script, after a here-document or behind a global flag are still read', () => {
+    expect(names('bash -c "npm install expresss"')).toEqual(['npm:expresss'])
+    expect(names("sh -c 'cd app && pip install reqeusts'")).toEqual(['pypi:reqeusts'])
+    expect(names('eval "npm install expresss"')).toEqual(['npm:expresss'])
+    expect(names('cat <<EOF > notes.txt\nnpm install not-this\nEOF\nnpm install expresss')).toEqual(['npm:expresss'])
+    expect(names('npm --prefix web install expresss')).toEqual(['npm:expresss'])
+    expect(names('cargo +nightly add serde')).toEqual(['crates:serde'])
+    expect(names('pnpm --filter api add zod')).toEqual(['npm:zod'])
+  })
+
+  test('a package named through a variable, or from another registry, is held as unchecked', () => {
+    expect(oddities('npm install $PACKAGE')).toEqual(['unreadable: npm install'])
+    expect(oddities('pip install "$(cat names.txt)"')).toEqual(['unreadable: pip install'])
+    expect(oddities('echo $HOME && npm run build')).toEqual([])
+    expect(oddities('npm install acme-ui --registry https://npm.evil.example/')).toEqual(['remote-source: registry npm.evil.example'])
+    expect(oddities('npm install express --registry https://registry.npmjs.org/')).toEqual([])
   })
 
   test('what is not flagged as outside a registry', () => {

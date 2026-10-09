@@ -37,7 +37,8 @@ Outside a registry, these are always held:
 
 - A download piped into a shell or an interpreter: `curl … | sh`, `bash <(curl …)`, `sh -c "$(curl …)"`.
 - A package from a git URL, a tarball URL or a `user/repo` shorthand.
-- `pip install` from an extra index.
+- `pip install` from an extra index, or `npm install --registry` pointing anywhere but the public registry.
+- An install whose package name comes from a shell variable, since it cannot be read.
 - A Homebrew formula from a third-party tap.
 
 ## What is flagged
@@ -113,7 +114,8 @@ All under installguard in `/config`.
 ## Limits
 
 - It reads the command line. A package pulled in as a dependency of the one you named is not looked up.
-- A package named through a shell variable (`npm install $PKG`) cannot be read, and is not checked.
+- A package named through a shell variable (`npm install $PKG`) cannot be read, so the command is held for your answer.
+- It watches commands, not files. A dependency Claude writes into `package.json` and then installs with a bare `npm install` is not looked up.
 - Popularity on RubyGems is not judged, since RubyGems publishes a total and not a rate.
 - A private package is "not on the registry" as far as the public registry knows. Answer once with "always allow".
 - It is a second look, not a scanner: it does not read the package's code.
@@ -122,6 +124,12 @@ All under installguard in `/config`.
 
 To check a package, installguard asks the public registry about that package by name: registry.npmjs.org and api.npmjs.org, pypi.org and pypistats.org, crates.io, rubygems.org. Nothing else is sent, no account is involved, and no model is called. The allowed list is kept on your machine.
 
+## Security
+
+A command is read wherever it stands: after `cd … &&`, inside `bash -c "…"` or `eval`, behind `sudo` or `env`, and after a here-document. If the guard itself fails on a command that fetches a package, the command is refused, not run.
+
+Found a way past it? Open an issue, or for anything sensitive use GitHub's private vulnerability reporting on this repository.
+
 ## Development
 
 ```sh
@@ -129,3 +137,7 @@ claude plugin validate .
 claude plugin test .
 claude --plugin-dir .
 ```
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).

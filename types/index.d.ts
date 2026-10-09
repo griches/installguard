@@ -14,7 +14,7 @@ export type Request = {
 
 /** Something a command fetches that no registry vouches for. */
 export type Oddity = {
-  kind: 'pipe-to-shell' | 'remote-source' | 'tap'
+  kind: 'pipe-to-shell' | 'remote-source' | 'tap' | 'unreadable'
   detail: string
   via: string
 }

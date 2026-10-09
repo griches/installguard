@@ -63,6 +63,8 @@ const INTERPRETER = String.raw`(?:(?:ba|z|da|k|fi)?sh|python[\d.]*|node|perl|rub
 const PIPED = new RegExp(String.raw`\b(?:curl|wget)\b[^|;&\n]*\|\s*(?:sudo\s+(?:-\S+\s+)*)?${INTERPRETER}`)
 const SUBSTITUTED = new RegExp(String.raw`\b(?:${INTERPRETER}\s+(?:-\w+\s+)*<\(\s*|${INTERPRETER}\s+-c\s+["']?\$\(\s*|eval\s+["']?\$\(\s*)(?:curl|wget)\b`)
 
+const PUBLIC_HOSTS = new Set(['registry.npmjs.org', 'pypi.org', 'crates.io', 'rubygems.org'])
+
 const host = (url: string) => /^https?:\/\/([^/\s:]+)/.exec(url)?.[1] ?? url
 
 /** A command line with what stands inside quotes taken out, so quoted text is not read as a pipeline. */
@@ -157,8 +159,13 @@ const read = (rule: Rule, args: readonly string[], via: string, found: Found) =>
       // `uvx --from pkg tool`: the positional argument is then a program, not a package.
       positional += flag === '--from' || flag === '-p' || flag === '--package' ? 1 : 0
     } else if (arg.startsWith('-')) {
-      if ((flag === '--extra-index-url' || flag === '--index-url' || flag === '-i') && rule.ecosystem === 'pypi') {
-        found.oddities.push({ kind: 'remote-source', detail: `index ${host(inline ?? args[i + 1] ?? '')}`, via })
+      const isIndex = (flag === '--extra-index-url' || flag === '--index-url' || flag === '-i') && rule.ecosystem === 'pypi'
+      const isRegistry = flag === '--registry' && (rule.ecosystem === 'npm' || rule.ecosystem === 'crates')
+      const named = host(inline ?? args[i + 1] ?? '')
+
+      // A registry other than the public one is not the one that gets looked up.
+      if ((isIndex || isRegistry) && !PUBLIC_HOSTS.has(named)) {
+        found.oddities.push({ kind: 'remote-source', detail: `${isIndex ? 'index' : 'registry'} ${named}`, via })
       }
 
       i += inline === undefined && rule.valued.has(flag) ? 1 : 0
@@ -186,7 +193,72 @@ const read = (rule: Rule, args: readonly string[], via: string, found: Found) =>
   }
 }
 
-const basename = (path: string) => path.slice(path.lastIndexOf('/') + 1)
+const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh', 'fish'])
+const VALUED_BEFORE_VERB = new Set([...NPM_VALUED, ...CARGO_VALUED, '--python', '--directory', '--project', '--cache-dir', '--color', '--config-file'])
+const MOST_NESTED = 3
+
+/** Where a program's verb stands among its arguments, the flags before it and their values passed over. */
+const verbAt = (args: readonly string[], from = 0) => {
+  for (let i = from; i < args.length; i += 1) {
+    const arg = args[i] ?? ''
+
+    if (arg.startsWith('-')) {
+      i += !arg.includes('=') && VALUED_BEFORE_VERB.has(arg) ? 1 : 0
+    } else if (!arg.startsWith('+')) {
+      return i
+    }
+  }
+
+  return -1
+}
+
+const scan = (command: string, found: Found, depth: number) => {
+  for (const one of commands(command)) {
+    const at = verbAt(one.args)
+    const verb = at < 0 ? undefined : one.args[at]
+    const rest = at < 0 ? [] : one.args.slice(at + 1)
+    const secondAt = verbAt(rest)
+    const second = secondAt < 0 ? undefined : rest[secondAt]
+    const after = secondAt < 0 ? [] : rest.slice(secondAt + 1)
+    const name = /^pip[\d.]*$/.test(one.name) ? 'pip' : one.name
+    const isPip = /^python[\d.]*$/.test(name) && one.args[0] === '-m' && one.args[1] === 'pip' && one.args[2] === 'install'
+    const fetches =
+      DIRECT[name] !== undefined ||
+      isPip ||
+      (verb !== undefined && VERBS[name]?.[verb] !== undefined) ||
+      (name === 'uv' && (verb === 'pip' || verb === 'tool')) ||
+      (name === 'yarn' && verb === 'global')
+
+    // A script handed to a shell or to eval runs too: it is read as a command line of its own.
+    if (depth < MOST_NESTED && (name === 'eval' || (SHELLS.has(name) && one.args.includes('-c')))) {
+      const script = name === 'eval' ? one.args.join(' ') : (one.args[one.args.indexOf('-c') + 1] ?? '')
+      scan(script, found, depth + 1)
+    } else if (one.hasDynamicArgs && fetches) {
+      found.oddities.push({ kind: 'unreadable', detail: `${name}${verb === undefined ? '' : ` ${verb}`}`, via: name })
+    } else if (DIRECT[name] !== undefined) {
+      read(DIRECT[name], one.args, name, found)
+    } else if (isPip) {
+      read(PIP, one.args.slice(3), 'pip install', found)
+    } else if (name === 'uv' && verb === 'pip' && second === 'install') {
+      read(PIP, after, 'uv pip install', found)
+    } else if (name === 'uv' && verb === 'tool' && (second === 'install' || second === 'run')) {
+      read(second === 'run' ? UVX : PIP, after, `uv tool ${second}`, found)
+    } else if (name === 'yarn' && verb === 'global' && second === 'add') {
+      read(NPM, after, 'yarn global add', found)
+    } else if (name === 'brew' && (verb === 'install' || verb === 'reinstall' || verb === 'tap')) {
+      for (const formula of rest.filter(arg => !arg.startsWith('-'))) {
+        const parts = formula.split('/')
+        const isForeign = verb === 'tap' ? parts.length === 2 : parts.length === 3
+
+        if (isForeign && parts[0]?.toLowerCase() !== 'homebrew') {
+          found.oddities.push({ kind: 'tap', detail: formula, via: `brew ${verb}` })
+        }
+      }
+    } else if (verb !== undefined && VERBS[name]?.[verb] !== undefined) {
+      read(VERBS[name][verb], rest, `${name} ${verb}`, found)
+    }
+  }
+}
 
 /**
  * The packages a Bash command would fetch from a registry, and what it would
@@ -204,38 +276,7 @@ export const findInstalls = (command: string): Found => {
     found.oddities.push({ kind: 'pipe-to-shell', detail: url === undefined ? 'a downloaded script' : host(url), via: 'curl | sh' })
   }
 
-  for (const one of commands(command)) {
-    const words = one.args.filter(arg => !arg.startsWith('-'))
-    const [verb, second] = words
-    const name = /^pip[\d.]*$/.test(one.name) ? 'pip' : one.name
-
-    if (one.hasDynamicArgs) {
-      continue
-    }
-
-    if (DIRECT[name] !== undefined) {
-      read(DIRECT[name], one.args, name, found)
-    } else if (/^python[\d.]*$/.test(name) && one.args[0] === '-m' && one.args[1] === 'pip' && one.args[2] === 'install') {
-      read(PIP, one.args.slice(3), 'pip install', found)
-    } else if (name === 'uv' && verb === 'pip' && second === 'install') {
-      read(PIP, one.args.slice(one.args.indexOf('install') + 1), 'uv pip install', found)
-    } else if (name === 'uv' && verb === 'tool' && (second === 'install' || second === 'run')) {
-      read(second === 'run' ? UVX : PIP, one.args.slice(one.args.indexOf(second) + 1), `uv tool ${second}`, found)
-    } else if (name === 'yarn' && verb === 'global' && second === 'add') {
-      read(NPM, one.args.slice(one.args.indexOf('add') + 1), 'yarn global add', found)
-    } else if (name === 'brew' && (verb === 'install' || verb === 'reinstall' || verb === 'tap')) {
-      for (const formula of words.slice(1)) {
-        const parts = formula.split('/')
-        const isForeign = verb === 'tap' ? parts.length === 2 : parts.length === 3
-
-        if (isForeign && parts[0]?.toLowerCase() !== 'homebrew') {
-          found.oddities.push({ kind: 'tap', detail: formula, via: `brew ${verb}` })
-        }
-      }
-    } else if (verb !== undefined && VERBS[name]?.[verb] !== undefined) {
-      read(VERBS[name][verb], one.args.slice(one.args.indexOf(verb) + 1), `${basename(name)} ${verb}`, found)
-    }
-  }
+  scan(command, found, 0)
 
   return found
 }
